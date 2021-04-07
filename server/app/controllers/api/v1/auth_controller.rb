@@ -1,21 +1,23 @@
-class Api::V1::AuthController < ApplicationController
+class Api::V1::UsersController < ApplicationController
   skip_before_action :authorized, only: [:create]
 
-  def create # POST /api/v1/login
-    @user = User.find_by(username: user_login_params[:username])
-    # @user.authenticate('password')
-    if @user && @user.authenticate(user_login_params[:password])
+  def profile
+    render json: { user: UserSerializer.new(current_user) }, status: :accepted
+  end
+
+  def create
+    @user = User.create(user_params)
+    if @user.valid?
       @token = encode_token({ user_id: @user.id })
-      render json: { user: UserSerializer.new(@user), jwt: @token }, status: :accepted
+      render json: { user: UserSerializer.new(@user), jwt: @token }, status: :created
     else
-      render json: { message: 'Invalid username or password' }, status: :unauthorized
+      render json: { error: 'failed to create user' }, status: :not_acceptable
     end
   end
 
   private
 
-  def user_login_params
-    # { user: { username: 'Chandler Bing', password: 'hi' } }
-    params.require(:user).permit(:username, :password)
+  def user_params
+    params.require(:user).permit(:username, :password, :bio, :avatar)
   end
-end
+end 
